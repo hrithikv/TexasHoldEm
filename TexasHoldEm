@@ -1,0 +1,382 @@
+import java.util.Arrays;
+
+public class TexasHoldem {
+
+	private int round = 1;
+	private Deck deck = new Deck(false);
+	private Card[] player1_hand = new Card[2];
+	private Card[] player2_hand = new Card[2];
+	private Card[] deal = new Card[5];
+	private Chips player1_chips = new Chips();
+	private Chips player2_chips = new Chips();
+	private int pot;
+	private int final_rnd;
+	private int currentCompBet;
+  private int curr_bet;
+	private boolean winner;
+	private boolean fold;
+	private boolean fold_comp;
+	private boolean check;
+	private boolean check_comp;
+	private boolean raise;
+	private boolean raise_comp;
+	private boolean call;
+	private boolean call_comp;
+	private Score player1Score = new Score();
+	private Score player2Score = new Score();
+	private int betRound = 0;
+	
+	public static void main(String[] args){
+		TexasHoldem run_game = new TexasHoldem();
+		run_game.deck.shuffle_desk(false);
+		run_game.player1_chips.increase_chips(500);
+		run_game.player2_chips.increase_chips(500);
+		run_game.startgame(run_game, run_game.deck);
+	}
+	
+	public void startgame(TexasHoldem game, Deck deck){
+		while (player1_chips.total_chips()>0 && player2_chips.total_chips()>0){
+			deck = new Deck(false);
+			deck.shuffle_desk(false);
+			player1_hand = new Card[2];
+			player2_hand = new Card[2];
+			deal = new Card[5];
+			System.out.println();
+			System.out.println();
+			System.out.println("Round: " + round);
+			fold=false;
+			fold_comp=false;
+			winner=false;
+			pot = 0;
+			while (!winner){
+				game.deal_hand();
+				System.out.println("You have " + player1_chips.total_chips() + " chips. The computer has " + player2_chips.total_chips() + " chips. "
+						+ "The pot has " + pot + " chips.");
+				bet();
+				if (winner){
+					break;
+				}
+				System.out.println();
+				game.deal_flop();
+				System.out.println("You have " + player1_chips.total_chips() + " chips. The computer has " + player2_chips.total_chips() + " chips. "
+						+ "The pot has " + pot + " chips.");
+				bet();
+				if (winner){
+					break;
+				}
+				System.out.println();
+				System.out.println("Your hand: " + Arrays.toString(player1_hand));
+				game.deal_turn();
+				System.out.println("You have " + player1_chips.total_chips() + " chips. The computer has " + player2_chips.total_chips() + " chips. "
+						+ "The pot has " + pot + " chips.");
+				bet();
+				if (winner){
+					break;
+				}
+				System.out.println();
+				System.out.println("Your hand: " + Arrays.toString(player1_hand));
+				game.deal_river();
+				System.out.println("You have " + player1_chips.total_chips() + " chips. The computer has " + player2_chips.total_chips() + " chips. "
+						+ "The pot has " + pot + " chips.");
+				bet();
+				winner = true;
+			}
+			final_rnd = winner();
+			if (final_rnd==1){
+				System.out.println("You won  " + round + ".");
+				player1_chips.increase_chips(pot);
+			}
+			else if (final_rnd==2){
+				player2_chips.increase_chips(pot);
+			}
+			else {
+				System.out.println("You tied. You split the pot.");
+        new_size = pot/2;
+				player1_chips.increase_chips(new_size);
+				player2_chips.increase_chips(new_size);
+			}
+			round++;
+		}
+		if (player1_chips.total_chips()<=0){
+			System.out.println("Game over! You lose!");
+		}
+		else {
+			System.out.println("Game over! You Win!");
+		}
+	}
+	
+	public void bet(){
+		String bet = "";
+		raise = false;
+		raise_comp = false;
+		call = false;
+		call_comp = false;
+		check = false;
+		check_comp = false;
+		int raiseBet = 0;
+		betRound = 0;
+		while (fold==false && check==false && call==false && call_comp==false && player1_chips.total_chips()>0 && player2_chips.total_chips()>0){
+			if (raise){
+				currentCompBet = curr_bet ;
+				call_comp = true;
+			}
+			else{
+				currentCompBet=compBet();
+			}
+			if (betRound == 0){
+				int firstBet = compBet();
+				while (firstBet==1){
+					firstBet = compBet();
+				}
+				currentCompBet = firstBet;	
+				betRound++;
+			}
+			if (currentCompBet==0){
+				check_comp = true;
+				System.out.println("The opponent checked.");
+				curr_bet = 0;
+				raise_comp = false;
+			}
+			else if (currentCompBet==1){
+				if (player2_chips.total_chips()<curr_bet && player2_chips.total_chips() > 0){
+					System.out.println("The opponent decided to go all in.");
+					curr_bet = player2_chips.total_chips();
+				}
+				else {
+				System.out.println("The computer called.");
+				player2_chips.removeChips(curr_bet);
+				raise_comp = false;
+				call_comp = true;
+				}
+			}
+			else if (currentCompBet==7){
+				if (player2_chips.total_chips()<0){
+					break;
+				}
+				player2_chips.removeChips(currentCompBet);
+				raise_comp = true;
+			}
+			else {
+				if (player2_chips.total_chips()<0){
+					break;
+				}
+				if (!raise){
+					System.out.println("The computer bets " + currentCompBet + ".");
+				}
+				else{
+					System.out.println("The computer calls.");
+				}
+				player2_chips.removeChips(currentCompBet);
+				raise_comp = true;
+			}
+			pot += curr_bet;
+			if (!call_comp){
+				System.out.println("Please choose if you would like to either-> 1)raise, 2)call, 3)check, and 4) fold?");
+				bet = TextIO.getlnString();
+				bet = bet.toLowerCase();
+				if (curr_bet>0){
+					while (bet.equals("check")){
+						System.out.println("Sorry, you can't check at this time.");
+						bet = TextIO.getlnString();
+						bet = bet.toLowerCase();
+					}
+				}
+				while (!bet.equals("raise") && !bet.equals("call") && !bet.equals("check") && !bet.equals("fold")){
+					bet = TextIO.getlnString();
+					bet = bet.toLowerCase();
+				}
+				switch(bet){
+					case "raise": 
+						System.out.println("Total amount to bet?");
+						raiseBet = TextIO.getlnInt();
+						if (player1_chips.total_chips() == curr_bet){
+							System.out.println("You cannot raise because you don't have more than the previous bet. You call.");
+							raiseBet = curr_bet;
+						}
+						else if (raiseBet == player1_chips.total_chips()){
+							System.out.println("You go all in.");
+							raise(raiseBet);
+							if (player2_chips.total_chips()>player1_chips.total_chips()){
+								System.out.println("The computer calls.");
+								player2_chips.removeChips(curr_bet);
+								pot += curr_bet;
+								call_comp = true;
+								break;
+							}
+							else {
+								System.out.println("The computer also goes all in.");
+								player2_chips.removeChips(player2_chips.total_chips());
+								pot += player2_chips.total_chips();
+								call_comp = true;
+								break;
+							}				
+						}
+						else{
+							while (raiseBet > player1_chips.total_chips()){
+								System.out.println("Please try again with a number smaller than previous bet");
+								raiseBet = TextIO.getlnInt();
+							}
+							while (raiseBet <= curr_bet){
+								System.out.println("Enter a number larger than the previous bet.");
+								raiseBet = TextIO.getlnInt();
+							}
+						}
+						raise(raiseBet);
+						check_comp = false;
+						check = false;
+						break;
+					case "call": 
+						if (check_comp){
+							System.out.println("You cannot call now. Error!");
+							check = true;
+						}
+						else{
+							call = true; 
+							call();
+						}
+						break;
+					case "check": 
+						check = true; 
+						break;
+					case "fold": 
+						fold = true;
+						fold();
+						break;
+					default: 
+						break;
+				}
+			}
+		}
+		return;
+	}
+	
+	public int compBet(){
+		int num = (int)(Math.random()*9);
+		int bet = 0;
+		switch(num){
+			case 0: 
+				break;
+			case 1: 
+				bet = 10; 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = bet;
+				break;
+			case 2: 
+				bet = 20; 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = bet;
+				break;
+			case 3: 
+				bet = 30; 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = bet; 
+				break;
+			case 4: 
+				bet = 40; 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = bet; 
+				break;
+			case 5: 
+				bet = 50; 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = bet; 
+				break;
+			case 6: 
+				bet = 60; 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = bet;
+				break;
+			case 7: 
+				bet = player2_chips.total_chips(); 
+				if (bet > player2_chips.total_chips()){
+					bet = player2_chips.total_chips();
+				}
+				curr_bet = player2_chips.total_chips();
+				break;
+			default: 
+				bet = 1;
+		}
+		return bet;
+	}
+	
+	public void deal_hand(){
+		player1_hand[0] = deck.deal_card();
+		player2_hand[0] = deck.deal_card();
+		player1_hand[1] = deck.deal_card();
+		player2_hand[1] = deck.deal_card();
+	}
+	
+	public void deal_flop(){
+		deal[0] = deck.deal_card();
+		deal[1] = deck.deal_card();
+		deal[2] = deck.deal_card();
+    flop_v = Arrays.toString(deal);
+		System.out.println("Flop: " + flop_v);
+	}
+	
+	public void deal_turn(){
+		deal[3] = deck.deal_card();
+    turn_v = Arrays.toString(deal);
+		System.out.println("Turn: " + turn_v);
+	}
+	
+	public void deal_river(){
+		deal[4] = deck.dealCard();
+    river_v = Arrays.toString(deal);
+		System.out.println("River: " + river_v);
+	}
+	
+	public void call(){
+		if (curr_bet > player1_chips.total_chips()){
+			player1_chips.remove_chips(player1_chips.total_chips());
+		}
+		else{
+			player1_chips.remove_chips(curr_bet);
+			pot += curr_bet;
+		}
+	}
+	
+	public void raise(int bet_value){
+		player1_chips.remove_chips(bet_value);
+		pot+=bet_value;
+		curr_bet = bet_value - curr_bet;
+		raise = true;
+	}
+	
+	public void fold(){
+		winner = true;
+	}
+	
+	public int winner(){
+		int winner_ct = 0;
+		if (fold==true){
+			winner_ct = 2;
+		}
+		else if (fold_comp==true){
+			winner_ct = 1;
+		}
+		else if (player1Score.points(player1_hand, deal) > player2Score.points(player2_hand, deal)){
+			winner_ct = 1;
+		}
+		else if (player2Score.points(player2_hand, deal) > player1Score.points(player1_hand, deal)){
+			winner_ct = 2;
+		}
+		else {
+			winner_ct = 3;
+		}
+
+		return winner_ct;
+	}
+}
