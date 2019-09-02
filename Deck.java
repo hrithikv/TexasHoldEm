@@ -29,7 +29,7 @@ public class Deck {
     }
 
 
-    public void shuffle(boolean has_Jokers) { 	
+    public void shuffle_deck(boolean has_Jokers) { 	
     	int totalCards = 0;
     	if (!has_Jokers){
     		totalCards = 52;
